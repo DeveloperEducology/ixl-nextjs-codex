@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 
 import { createServerClient } from '@/lib/supabase/server';
 import {
@@ -15,6 +16,7 @@ const TABLES = {
   units: ['units'],
   microskills: ['micro_skills', 'microskills'],
 };
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function fetchRows(
   supabase,
@@ -54,11 +56,12 @@ function sortByOrder(list) {
   return [...(list || [])].sort((a, b) => {
     const aOrder = Number(a?.sort_order ?? a?.idx ?? 0);
     const bOrder = Number(b?.sort_order ?? b?.idx ?? 0);
-    return aOrder - bOrder;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
   });
 }
 
-async function getAllCurriculumRows() {
+const getAllCurriculumRows = cache(async function getAllCurriculumRows() {
   const supabase = createServerClient();
 
   const [gradesRows, subjectsRows, unitsRows, microskillsRows] = await Promise.all([
@@ -74,10 +77,54 @@ async function getAllCurriculumRows() {
     units: unitsRows ?? fallbackUnits,
     microskills: microskillsRows ?? fallbackMicroskills,
   };
+});
+
+function toSkillSlugBase(name, id) {
+  const base = String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (base) return base;
+  return `skill-${String(id || '').slice(0, 8) || 'item'}`;
 }
 
-export async function getHomeGradesData() {
+function withMicroskillSlugs(microskills) {
+  const ordered = sortByOrder(microskills);
+  const counts = new Map();
+
+  return ordered.map((skill) => {
+    const base = toSkillSlugBase(skill.name, skill.id);
+    const nextCount = (counts.get(base) || 0) + 1;
+    counts.set(base, nextCount);
+    const slug = nextCount === 1 ? base : `${base}-${nextCount}`;
+    return { ...skill, slug };
+  });
+}
+
+const getCurriculumWithSlugs = cache(async function getCurriculumWithSlugs() {
   const { grades, subjects, units, microskills } = await getAllCurriculumRows();
+  const microskillsWithSlugs = withMicroskillSlugs(microskills);
+
+  const microskillById = new Map(
+    microskillsWithSlugs.map((skill) => [String(skill.id), skill])
+  );
+  const microskillBySlug = new Map(
+    microskillsWithSlugs.map((skill) => [String(skill.slug), skill])
+  );
+
+  return {
+    grades,
+    subjects,
+    units,
+    microskills: microskillsWithSlugs,
+    microskillById,
+    microskillBySlug,
+  };
+});
+
+export async function getHomeGradesData() {
+  const { grades, subjects, units, microskills } = await getCurriculumWithSlugs();
 
   const skillsPerUnit = microskills.reduce((acc, skill) => {
     const unitId = skill.unit_id;
@@ -112,7 +159,7 @@ export async function getHomeGradesData() {
 }
 
 export async function getSkillsPageData(gradeId, subjectSlug) {
-  const { grades, subjects, units, microskills } = await getAllCurriculumRows();
+  const { grades, subjects, units, microskills } = await getCurriculumWithSlugs();
 
   const grade = grades.find((g) => String(g.id) === String(gradeId)) || null;
   const gradeSubjects = sortByOrder(subjects.filter((s) => String(s.grade_id) === String(gradeId)));
@@ -147,12 +194,15 @@ export async function getSkillsPageData(gradeId, subjectSlug) {
 }
 
 export async function getMicroskillContextById(microskillId) {
-  const { grades, subjects, units, microskills } = await getAllCurriculumRows();
+  return getMicroskillContextByKey(microskillId);
+}
 
-  const microskill = microskills.find((m) => String(m.id) === String(microskillId)) || null;
-  if (!microskill) {
-    return { grade: null, subject: null, unit: null, microskill: null };
-  }
+export async function getMicroskillContextByKey(microskillKey) {
+  const { grades, subjects, units, microskillById, microskillBySlug } = await getCurriculumWithSlugs();
+  const key = String(microskillKey ?? '').trim();
+
+  const microskill = microskillById.get(key) || microskillBySlug.get(key) || null;
+  if (!microskill) return { grade: null, subject: null, unit: null, microskill: null };
 
   const unit = units.find((u) => String(u.id) === String(microskill.unit_id)) || null;
   const subject = unit
@@ -163,4 +213,14 @@ export async function getMicroskillContextById(microskillId) {
     : null;
 
   return { grade, subject, unit, microskill };
+}
+
+export async function resolveMicroskillIdByKey(microskillKey) {
+  const key = String(microskillKey ?? '').trim();
+  if (!key) return null;
+  if (UUID_REGEX.test(key)) return key;
+
+  const { microskillBySlug } = await getCurriculumWithSlugs();
+  const match = microskillBySlug.get(key);
+  return match ? String(match.id) : null;
 }

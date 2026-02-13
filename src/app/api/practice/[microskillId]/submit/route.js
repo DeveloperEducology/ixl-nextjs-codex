@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase/server';
 import { mapDbQuestion } from '@/lib/practice/questionMapper';
+import { resolveMicroskillIdByKey } from '@/lib/curriculum/server';
 
 const SKILL_COLUMNS = ['micro_skill_id', 'microskill_id'];
 const ORDER_COLUMNS = ['sort_order', 'idx', 'created_at', 'id'];
@@ -109,7 +110,14 @@ async function insertLog(supabase, payload) {
 }
 
 export async function POST(req, { params }) {
-  const { microskillId } = await params;
+  const { microskillId: microskillKey } = await params;
+  const microskillId = await resolveMicroskillIdByKey(microskillKey);
+  if (!microskillId) {
+    return NextResponse.json(
+      { error: 'Microskill not found.' },
+      { status: 404 }
+    );
+  }
 
   let payload;
   try {

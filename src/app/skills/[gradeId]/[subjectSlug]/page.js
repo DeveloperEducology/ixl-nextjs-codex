@@ -131,7 +131,7 @@ export default async function SkillsPage({ params }) {
                                                 {microskills.map((skill) => (
                                                     <Link
                                                         key={skill.id}
-                                                        href={`/practice/${skill.id}`}
+                                                        href={`/practice/${skill.slug || skill.id}`}
                                                         className={styles.skillItem}
                                                     >
                                                         <span className={styles.skillCode}>{skill.code}</span>

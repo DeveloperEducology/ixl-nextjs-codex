@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getMicroskillContextById } from '@/lib/curriculum/server';
+import { getMicroskillContextByKey } from '@/lib/curriculum/server';
 
 export async function GET(_req, { params }) {
   const { microskillId } = await params;
-  const context = await getMicroskillContextById(microskillId);
+  const context = await getMicroskillContextByKey(microskillId);
 
   if (!context?.microskill) {
     return NextResponse.json(

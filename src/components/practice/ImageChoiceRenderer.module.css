@@ -178,11 +178,13 @@
     }
 
     .option {
-        padding: 0.75rem;
-        min-height: 120px;
+        padding: 0.55rem;
+        min-height: 92px;
+        max-width: 280px;
+        margin: 0 auto;
     }
 
     .imageWrapper {
-        height: 100px;
+        height: 72px;
     }
 }

@@ -408,11 +408,11 @@ export default function PracticePage() {
 
       <div className={styles.layout}>
         <main className={styles.mainContent}>
-          <div className={styles.headerActions}>
+          {/* <div className={styles.headerActions}>
             <button className={styles.exampleButton}><span className={styles.buttonIcon}>💡</span>Learn with an example</button>
             <span className={styles.orText}>or</span>
             <button className={styles.videoButton}><span className={styles.buttonIcon}>▶</span>Watch a video</button>
-          </div>
+          </div> */}
 
           <div
             className={`${styles.questionStage} ${
