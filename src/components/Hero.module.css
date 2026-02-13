@@ -1,0 +1,180 @@
+.hero {
+    position: relative;
+    background: linear-gradient(135deg, #22c55e 0%, #10b981 50%, #16a34a 100%);
+    padding: 4rem 2rem;
+    overflow: hidden;
+    margin-bottom: 3rem;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.decorativeShape {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 6s ease-in-out infinite;
+    animation-delay: var(--delay);
+    pointer-events: none;
+}
+
+.decorativeShape:nth-child(1) {
+    top: 10%;
+    left: 5%;
+}
+
+.decorativeShape:nth-child(2) {
+    top: 60%;
+    right: 10%;
+    width: 100px;
+    height: 100px;
+}
+
+.decorativeShape:nth-child(3) {
+    bottom: 20%;
+    left: 50%;
+    width: 80px;
+    height: 80px;
+}
+
+.heroContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.heroTitle {
+    color: white;
+    margin-bottom: 2.5rem;
+    animation: slideInLeft 0.8s ease-out;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.highlight {
+    position: relative;
+    display: inline-block;
+    color: #fef3c7;
+    text-shadow: 0 0 20px rgba(254, 243, 199, 0.5);
+}
+
+.featuresContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.featureCard {
+    background: white;
+    padding: 2rem 1.5rem;
+    border-radius: var(--border-radius-xl);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: var(--transition-base);
+    animation: scaleIn 0.6s ease-out backwards;
+    animation-delay: var(--card-delay);
+    position: relative;
+    overflow: hidden;
+}
+
+.featureCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #22c55e, #10b981, #16a34a);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.featureCard:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.featureCard:hover::before {
+    transform: scaleX(1);
+}
+
+.featureIcon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+.featureTitle {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+}
+
+.featureText {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.ctaButton {
+    background: white;
+    color: #16a34a;
+    padding: 1rem 2.5rem;
+    border-radius: var(--border-radius-xl);
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    transition: var(--transition-base);
+    animation: scaleIn 0.8s ease-out 0.8s backwards;
+}
+
+.ctaButton:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+    background: #fef3c7;
+}
+
+.ctaButton:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+@media (max-width: 768px) {
+    .hero {
+        padding: 3rem 1.5rem;
+    }
+
+    .featuresContainer {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .heroTitle {
+        font-size: 2rem;
+    }
+
+    .featureCard {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .ctaButton {
+        padding: 0.875rem 2rem;
+        font-size: 1rem;
+    }
+}
