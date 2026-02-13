@@ -34,8 +34,8 @@
 }
 
 .item {
-    background: #1f7ad6;
-    border: 2px solid #196bbd;
+    background: #ffffff;
+    border: 3px solid #9fdcf8;
     border-radius: 10px;
     padding: 0.8rem 1rem;
     display: flex;
@@ -46,25 +46,28 @@
     transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease;
     user-select: none;
     flex: 0 0 auto;
-    min-width: 104px;
+    width: fit-content;
+    min-width: 72px;
     min-height: 62px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .item:hover:not(.disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 5px 12px rgba(25, 107, 189, 0.35);
+    border-color: #74c9f2;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
 }
 
 .item.dragging {
     opacity: 0.95;
     z-index: 5;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    border-color: #4cb7eb;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
 }
 
 .item.selected {
-    border-color: #63c516;
-    box-shadow: 0 0 0 3px rgba(99, 197, 22, 0.25), 0 6px 14px rgba(25, 107, 189, 0.25);
+    border-color: #33a9e6;
+    box-shadow: 0 0 0 3px rgba(51, 169, 230, 0.2), 0 6px 14px rgba(15, 23, 42, 0.14);
 }
 
 .item.disabled {
@@ -76,7 +79,7 @@
     flex: 1;
     font-size: clamp(1.2rem, 3vw, 2rem);
     font-weight: 700;
-    color: #fff;
+    color: #111827;
     text-align: center;
     line-height: 1;
 }
@@ -104,17 +107,7 @@
 }
 
 .positionBadge {
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
-    border-radius: 999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.7rem;
+    display: none;
 }
 
 .submitButton {
@@ -168,9 +161,10 @@
     }
 
     .item {
-        flex: 1 1 0;
-        min-width: 0;
-        max-width: 96px;
+        flex: 0 0 auto;
+        width: fit-content;
+        min-width: 56px;
+        max-width: 88px;
         min-height: 52px;
         padding: 0.5rem 0.45rem;
     }

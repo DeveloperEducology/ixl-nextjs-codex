@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import QuestionRenderer from '@/components/practice/QuestionRenderer';
+import QuestionParts from '@/components/practice/QuestionParts';
 import styles from './practice.module.css';
 
 const CHALLENGE_STAGES = [
@@ -11,6 +12,31 @@ const CHALLENGE_STAGES = [
   { stage: 2, tokensNeeded: 10, label: 'Stage 2 of 3' },
   { stage: 3, tokensNeeded: 15, label: 'Stage 3 of 3' },
 ];
+
+function parseSolutionParts(solution) {
+  if (Array.isArray(solution)) return solution;
+
+  if (solution && typeof solution === 'object') {
+    if (solution.type && solution.content !== undefined) return [solution];
+    return null;
+  }
+
+  if (typeof solution !== 'string') return null;
+  const trimmed = solution.trim();
+  if (!trimmed || (!trimmed.startsWith('[') && !trimmed.startsWith('{'))) return null;
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object' && parsed.type && parsed.content !== undefined) {
+      return [parsed];
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
 
 function getOrCreateStudentId() {
   if (typeof window === 'undefined') return null;
@@ -63,6 +89,7 @@ export default function PracticePage() {
 
   const { microskill, subject, grade } = curriculumContext;
   const skillTitle = microskill ? `${microskill.code} ${microskill.name}` : `Skill ${microskillId}`;
+  const solutionParts = parseSolutionParts(currentQuestion?.solution);
 
   useEffect(() => {
     let active = true;
@@ -465,7 +492,13 @@ export default function PracticePage() {
               <div className={styles.feedbackIcon}>✗</div>
               <div className={styles.feedbackContent}>
                 <h3>Not quite</h3>
-                <p className={styles.solution}>{currentQuestion.solution}</p>
+                {solutionParts ? (
+                  <div className={styles.solution}>
+                    <QuestionParts parts={solutionParts} />
+                  </div>
+                ) : (
+                  <p className={styles.solution}>{currentQuestion.solution}</p>
+                )}
                 <button onClick={handleNext} disabled={isSubmitting} className={styles.nextButton}>
                   {isSubmitting ? 'Loading...' : nextQuestion ? 'Next Question →' : 'Finish →'}
                 </button>

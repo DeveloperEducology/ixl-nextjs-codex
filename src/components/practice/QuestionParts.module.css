@@ -11,6 +11,14 @@
     color: var(--text-primary);
 }
 
+.text code {
+    background: #e2e8f0;
+    border-radius: 4px;
+    padding: 0.08rem 0.35rem;
+    font-size: 0.9em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 .imageContainer {
     display: inline-flex;
     align-items: center;

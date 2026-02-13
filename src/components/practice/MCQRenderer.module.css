@@ -19,19 +19,21 @@
 }
 
 .optionsGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
 
 .optionsGrid.vertical {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .option {
-    background: #f8f9fa;
-    border: 3px solid transparent;
+    background: #ffffff;
+    border: 3px solid #9fdcf8;
     border-radius: var(--border-radius-lg);
     padding: 1.25rem;
     font-size: 0.9rem;
@@ -42,17 +44,21 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    text-align: left;
+    text-align: center;
+    width: fit-content;
+    min-width: 120px;
+    max-width: 260px;
+    justify-content: center;
 }
 
 .option:hover:not(.disabled) {
-    background: #e8f5e9;
-    border-color: #22c55e;
+    background: #ffffff;
+    border-color: #74c9f2;
     transform: translateY(-2px);
 }
 
 .option.selected {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    background: #e9f8ef;
     border-color: #22c55e;
     font-weight: 600;
 }
@@ -76,7 +82,7 @@
 }
 
 .optionText {
-    flex: 1;
+    flex: 0 1 auto;
 }
 
 .optionImage {
@@ -127,10 +133,12 @@
     }
 
     .optionsGrid {
-        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
 
     .option {
-        padding: 1rem;
+        min-width: 90px;
+        max-width: 180px;
+        padding: 0.8rem 0.95rem;
     }
 }
