@@ -92,6 +92,26 @@ function normalizeSortingItems(items) {
   });
 }
 
+function normalizePart(part) {
+  const raw = typeof part === 'object' && part !== null ? part : { type: 'text', content: String(part ?? '') };
+  const normalized = {
+    ...raw,
+    type: raw.type ?? 'text',
+    isVertical: toBoolean(raw.isVertical ?? raw.is_vertical, false),
+  };
+
+  if (Array.isArray(raw.children)) {
+    normalized.children = raw.children.map(normalizePart);
+  }
+
+  return normalized;
+}
+
+function normalizeParts(parts) {
+  const list = Array.isArray(parts) ? parts : [];
+  return list.map(normalizePart);
+}
+
 export function mapDbQuestion(row) {
   const parsedOptions = parseMaybeJson(row.options, []);
   const parsedItems = parseMaybeJson(row.items, []);
@@ -113,7 +133,7 @@ export function mapDbQuestion(row) {
     id: row.id,
     microSkillId: row.micro_skill_id ?? row.microskill_id ?? null,
     type: row.type,
-    parts: parseMaybeJson(row.parts, []),
+    parts: normalizeParts(parseMaybeJson(row.parts, [])),
     options: parsedOptions,
     items,
     dragItems,

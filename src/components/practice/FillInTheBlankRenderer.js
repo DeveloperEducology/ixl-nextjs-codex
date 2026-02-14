@@ -2,6 +2,7 @@
 
 import styles from './FillInTheBlankRenderer.module.css';
 import { getImageSrc, isImageUrl, isInlineSvg } from './contentUtils';
+import SpeakerButton from './SpeakerButton';
 
 export default function FillInTheBlankRenderer({
     question,
@@ -15,20 +16,32 @@ export default function FillInTheBlankRenderer({
         onAnswer(newAnswer);
     };
 
+    const wrapPart = (part, index, content) => {
+        if (content === null) return null;
+        const isVertical = Boolean(part?.isVertical);
+        return (
+            <div
+                key={`wrap-${index}`}
+                className={`${styles.partWrapper} ${isVertical ? styles.verticalPart : styles.inlinePart}`}
+            >
+                {content}
+            </div>
+        );
+    };
+
     const renderPart = (part, index) => {
         switch (part.type) {
             case 'text':
                 if (isInlineSvg(part.content)) {
-                    return (
+                    return wrapPart(part, index, (
                         <div
-                            key={index}
                             className={styles.imageContainer}
                             dangerouslySetInnerHTML={{ __html: part.content }}
                         />
-                    );
+                    ));
                 }
                 if (isImageUrl(part.content)) {
-                    return (
+                    return wrapPart(part, index, (
                         <div key={index} className={styles.imageContainer}>
                             <img
                                 src={part.content}
@@ -37,22 +50,26 @@ export default function FillInTheBlankRenderer({
                                 loading="lazy"
                             />
                         </div>
-                    );
+                    ));
                 }
-                return <span key={index} className={styles.text}>{part.content}</span>;
+                return wrapPart(part, index, (
+                    <span className={styles.textWithSpeaker}>
+                        <SpeakerButton text={part.content} className={styles.inlineSpeaker} />
+                        <span className={styles.text}>{part.content}</span>
+                    </span>
+                ));
 
             case 'image':
                 if (isInlineSvg(getImageSrc(part.imageUrl))) {
-                    return (
+                    return wrapPart(part, index, (
                         <div
-                            key={index}
                             className={styles.imageContainer}
                             dangerouslySetInnerHTML={{ __html: getImageSrc(part.imageUrl) }}
                         />
-                    );
+                    ));
                 }
-                return (
-                    <div key={index} className={styles.imageContainer}>
+                return wrapPart(part, index, (
+                    <div className={styles.imageContainer}>
                         <img
                             src={getImageSrc(part.imageUrl)}
                             alt="Question image"
@@ -64,20 +81,19 @@ export default function FillInTheBlankRenderer({
                             loading="lazy"
                         />
                     </div>
-                );
+                ));
 
             case 'sequence':
-                return (
-                    <div key={index} className={styles.sequence}>
+                return wrapPart(part, index, (
+                    <div className={styles.sequence}>
                         {part.children.map((child, childIndex) => renderPart(child, `${index}-${childIndex}`))}
                     </div>
-                );
+                ));
 
             case 'blank':
             case 'input':
-                return (
+                return wrapPart(part, index, (
                     <input
-                        key={index}
                         type="text"
                         className={styles.input}
                         value={userAnswer?.[part.id] || ''}
@@ -85,7 +101,7 @@ export default function FillInTheBlankRenderer({
                         disabled={isAnswered}
                         style={{ width: part.width || '80px' }}
                     />
-                );
+                ));
 
             default:
                 return null;

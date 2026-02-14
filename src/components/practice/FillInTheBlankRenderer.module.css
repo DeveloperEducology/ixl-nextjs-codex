@@ -22,8 +22,32 @@
     gap: 0.5rem;
 }
 
+.partWrapper {
+    display: inline-flex;
+    align-items: center;
+}
+
+.inlinePart {
+    width: auto;
+}
+
+.verticalPart {
+    width: 100%;
+}
+
 .text {
     display: inline;
+}
+
+.textWithSpeaker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.inlineSpeaker {
+    width: 24px;
+    height: 24px;
 }
 
 .imageContainer {

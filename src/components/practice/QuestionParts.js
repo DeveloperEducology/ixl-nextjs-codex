@@ -2,6 +2,16 @@
 
 import styles from './QuestionParts.module.css';
 import { getImageSrc, isImageUrl, isInlineSvg } from './contentUtils';
+import SpeakerButton from './SpeakerButton';
+
+/**
+ * @typedef {Object} QuestionPart
+ * @property {string} type
+ * @property {string} [content]
+ * @property {string} [imageUrl]
+ * @property {QuestionPart[]} [children]
+ * @property {boolean} [isVertical] - Defaults to false when omitted.
+ */
 
 function renderInlineMarkdown(text) {
     const normalized = String(text ?? '');
@@ -24,7 +34,8 @@ function renderInlineMarkdown(text) {
 }
 
 export default function QuestionParts({ parts }) {
-    const renderPart = (part, index) => {
+    const safeParts = Array.isArray(parts) ? parts : [];
+    const renderPartContent = (part, index) => {
         const imageSrc = getImageSrc(part?.imageUrl || part?.content);
 
         switch (part.type) {
@@ -51,9 +62,12 @@ export default function QuestionParts({ parts }) {
                     );
                 }
                 return (
-                    <span key={index} className={styles.text}>
-                        {renderInlineMarkdown(part.content)}
-                    </span>
+                    <div key={index} className={styles.textRow}>
+                        <SpeakerButton text={part.content} />
+                        <span className={styles.text}>
+                            {renderInlineMarkdown(part.content)}
+                        </span>
+                    </div>
                 );
 
             case 'image':
@@ -114,9 +128,24 @@ export default function QuestionParts({ parts }) {
         }
     };
 
+    const renderPart = (part, index) => {
+        const content = renderPartContent(part, index);
+        if (content === null) return null;
+
+        const isVertical = Boolean(part?.isVertical);
+        return (
+            <div
+                key={`wrap-${index}`}
+                className={`${styles.partWrapper} ${isVertical ? styles.verticalPart : styles.inlinePart}`}
+            >
+                {content}
+            </div>
+        );
+    };
+
     return (
         <div className={styles.container}>
-            {parts.map((part, index) => renderPart(part, index))}
+            {safeParts.map((part, index) => renderPart(part, index))}
         </div>
     );
 }
