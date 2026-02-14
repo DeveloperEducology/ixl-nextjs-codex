@@ -87,8 +87,8 @@ export default function QuestionParts({ parts }) {
                             alt="Question image"
                             className={styles.image}
                             style={{
-                                width: part.width ? `${part.width}px` : 'auto',
-                                height: part.height ? `${part.height}px` : 'auto',
+                                maxWidth: part.width ? `${part.width}px` : undefined,
+                                maxHeight: part.height ? `${part.height}px` : undefined,
                             }}
                             loading="lazy"
                         />

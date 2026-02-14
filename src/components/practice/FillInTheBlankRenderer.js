@@ -11,6 +11,46 @@ export default function FillInTheBlankRenderer({
     onSubmit,
     isAnswered
 }) {
+    const parseCorrectAnswers = () => {
+        try {
+            const parsed = JSON.parse(question.correctAnswerText || '{}');
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch {
+            return {};
+        }
+    };
+
+    const correctAnswers = parseCorrectAnswers();
+
+    const getInputConfig = (part) => {
+        const declaredType = String(part?.answerType || part?.answer_type || '').toLowerCase();
+        if (declaredType === 'number' || declaredType === 'numeric') {
+            return { inputMode: 'numeric', pattern: '[0-9]*' };
+        }
+        if (declaredType === 'decimal') {
+            return { inputMode: 'decimal', pattern: '[-+]?[0-9]*[.]?[0-9]+' };
+        }
+
+        const expected = correctAnswers?.[part.id];
+        if (typeof expected === 'number') {
+            return Number.isInteger(expected)
+                ? { inputMode: 'numeric', pattern: '[0-9]*' }
+                : { inputMode: 'decimal', pattern: '[-+]?[0-9]*[.]?[0-9]+' };
+        }
+
+        if (typeof expected === 'string') {
+            const trimmed = expected.trim();
+            if (/^-?\d+$/.test(trimmed)) {
+                return { inputMode: 'numeric', pattern: '[-]?[0-9]*' };
+            }
+            if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+                return { inputMode: 'decimal', pattern: '[-+]?[0-9]*[.]?[0-9]+' };
+            }
+        }
+
+        return { inputMode: 'text', pattern: undefined };
+    };
+
     const handleInputChange = (inputId, value) => {
         const newAnswer = { ...(userAnswer || {}), [inputId]: value };
         onAnswer(newAnswer);
@@ -92,6 +132,7 @@ export default function FillInTheBlankRenderer({
 
             case 'blank':
             case 'input':
+                const inputConfig = getInputConfig(part);
                 return wrapPart(part, index, (
                     <input
                         type="text"
@@ -100,6 +141,8 @@ export default function FillInTheBlankRenderer({
                         onChange={(e) => handleInputChange(part.id, e.target.value)}
                         disabled={isAnswered}
                         style={{ width: part.width || '80px' }}
+                        inputMode={inputConfig.inputMode}
+                        pattern={inputConfig.pattern}
                     />
                 ));
 

@@ -51,18 +51,16 @@
     border-radius: var(--border-radius-sm);
     object-fit: contain;
     max-width: min(100%, 320px);
-    max-height: 240px;
+    height: 150px;
     width: auto;
-    height: auto;
 }
 
 .urlImage {
     border-radius: var(--border-radius-sm);
     object-fit: contain;
     max-width: min(100%, 320px);
-    max-height: 240px;
+    height: 150px;
     width: auto;
-    height: auto;
 }
 
 .svgContainer {
@@ -101,7 +99,11 @@
     .image,
     .urlImage {
         max-width: min(100%, 220px);
-        max-height: 160px;
+    }
+
+    .image,
+    .urlImage {
+        height: 80px;
     }
 
     .svgContainer svg {
