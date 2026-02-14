@@ -129,4 +129,18 @@ export const MOCK_QUESTIONS = [
     showSubmitButton: true,
     sortOrder: 9,
   },
+  {
+    id: 'q10',
+    type: 'measure',
+    parts: [{ type: 'text', content: 'Measure the length of the dark line.' }],
+    correctAnswerText: '7',
+    solution: 'The line extends to 7 cm.',
+    difficulty: 'medium',
+    showSubmitButton: true,
+    adaptiveConfig: {
+      unit: 'cm',
+      object_width: 280,
+    },
+    sortOrder: 10,
+  },
 ];

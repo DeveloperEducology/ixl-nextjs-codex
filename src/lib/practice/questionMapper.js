@@ -112,6 +112,32 @@ function normalizeParts(parts) {
   return list.map(normalizePart);
 }
 
+function normalizeQuestionType(value) {
+  const raw = String(value ?? '').trim();
+  const lowered = raw.toLowerCase();
+
+  const aliases = {
+    fillintheblank: 'fillInTheBlank',
+    fill_in_the_blank: 'fillInTheBlank',
+    'fill-in-the-blank': 'fillInTheBlank',
+    imagechoice: 'imageChoice',
+    image_choice: 'imageChoice',
+    textinput: 'textInput',
+    text_input: 'textInput',
+    draganddrop: 'dragAndDrop',
+    drag_and_drop: 'dragAndDrop',
+    fourpicsoneword: 'fourPicsOneWord',
+    four_pics_one_word: 'fourPicsOneWord',
+    'four-pics-one-word': 'fourPicsOneWord',
+    measure: 'measure',
+    sorting: 'sorting',
+    mcq: 'mcq',
+  };
+
+  if (aliases[lowered]) return aliases[lowered];
+  return raw;
+}
+
 export function mapDbQuestion(row) {
   const parsedOptions = parseMaybeJson(row.options, []);
   const parsedItems = parseMaybeJson(row.items, []);
@@ -132,7 +158,7 @@ export function mapDbQuestion(row) {
   return {
     id: row.id,
     microSkillId: row.micro_skill_id ?? row.microskill_id ?? null,
-    type: row.type,
+    type: normalizeQuestionType(row.type),
     parts: normalizeParts(parseMaybeJson(row.parts, [])),
     options: parsedOptions,
     items,

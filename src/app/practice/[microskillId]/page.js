@@ -182,6 +182,16 @@ export default function PracticePage() {
   const validateAnswer = (question, answer) => {
     if (!question) return false;
 
+    const parseNumber = (value) => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      const str = String(value ?? '').trim();
+      if (!str) return null;
+      const match = str.match(/-?\d+(\.\d+)?/);
+      if (!match) return null;
+      const parsed = Number(match[0]);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
     switch (question.type) {
       case 'mcq':
       case 'imageChoice':
@@ -245,6 +255,13 @@ export default function PracticePage() {
 
       case 'fourPicsOneWord':
         return answer?.join('') === String(question.correctAnswerText || '').toUpperCase();
+
+      case 'measure': {
+        const expected = parseNumber(question.correctAnswerText);
+        const actual = parseNumber(answer);
+        if (expected === null || actual === null) return false;
+        return Math.abs(actual - expected) < 0.0001;
+      }
 
       default:
         return false;
