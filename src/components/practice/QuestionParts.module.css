@@ -50,15 +50,17 @@
 .image {
     border-radius: var(--border-radius-sm);
     object-fit: contain;
-    max-width: 220px;
+    max-width: min(100%, 320px);
+    max-height: 240px;
+    width: auto;
     height: auto;
 }
 
 .urlImage {
     border-radius: var(--border-radius-sm);
     object-fit: contain;
-    max-width: 220px;
-    max-height: 220px;
+    max-width: min(100%, 320px);
+    max-height: 240px;
     width: auto;
     height: auto;
 }
@@ -71,7 +73,8 @@
 }
 
 .svgContainer svg {
-    max-width: 100%;
+    max-width: min(100%, 320px);
+    max-height: 240px;
     height: auto;
 }
 
@@ -93,6 +96,17 @@
 @media (max-width: 768px) {
     .text {
         font-size: 0.96rem;
+    }
+
+    .image,
+    .urlImage {
+        max-width: min(100%, 220px);
+        max-height: 160px;
+    }
+
+    .svgContainer svg {
+        max-width: min(100%, 220px);
+        max-height: 160px;
     }
 
     .sequence {

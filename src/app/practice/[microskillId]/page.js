@@ -38,6 +38,120 @@ function parseSolutionParts(solution) {
   return null;
 }
 
+function parseMaybeJson(text, fallback = null) {
+  if (typeof text !== 'string') return fallback;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return fallback;
+  }
+}
+
+function getCorrectAnswerDisplay(question) {
+  if (!question) return '';
+
+  switch (question.type) {
+    case 'mcq':
+    case 'imageChoice': {
+      if (question.isMultiSelect) {
+        const indices = Array.isArray(question.correctAnswerIndices) ? question.correctAnswerIndices : [];
+        const labels = indices.map((idx) => {
+          const option = question.options?.[idx];
+          if (typeof option === 'string' && !option.trim().startsWith('<') && !/^https?:\/\//i.test(option)) {
+            return option;
+          }
+          return `Option ${Number(idx) + 1}`;
+        });
+        return labels.join(', ');
+      }
+
+      const idx = Number(question.correctAnswerIndex);
+      if (!Number.isFinite(idx) || idx < 0) return '';
+      const option = question.options?.[idx];
+      if (typeof option === 'string' && !option.trim().startsWith('<') && !/^https?:\/\//i.test(option)) {
+        return option;
+      }
+      return `Option ${idx + 1}`;
+    }
+
+    case 'textInput':
+    case 'measure':
+    case 'fourPicsOneWord':
+      return String(question.correctAnswerText || '');
+
+    case 'fillInTheBlank': {
+      const parsed = parseMaybeJson(question.correctAnswerText, {});
+      if (!parsed || typeof parsed !== 'object') return String(question.correctAnswerText || '');
+      return Object.entries(parsed).map(([k, v]) => `${k}: ${v}`).join(', ');
+    }
+
+    case 'sorting': {
+      const orderedIds = parseMaybeJson(question.correctAnswerText, []);
+      if (Array.isArray(orderedIds) && orderedIds.length > 0 && Array.isArray(question.items)) {
+        const labelById = new Map(question.items.map((item) => [String(item.id), String(item.content ?? item.id)]));
+        return orderedIds.map((id) => labelById.get(String(id)) || String(id)).join(', ');
+      }
+      return String(question.correctAnswerText || '');
+    }
+
+    default:
+      return String(question.correctAnswerText || '');
+  }
+}
+
+function isVisualOption(option) {
+  if (typeof option !== 'string') return false;
+  const value = option.trim().toLowerCase();
+  return (
+    value.startsWith('<svg') ||
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('/') ||
+    value.startsWith('data:image/')
+  );
+}
+
+function getOptionLabel(option, index) {
+  if (typeof option === 'object' && option !== null) {
+    const label = option.label ?? option.text ?? '';
+    if (label) return String(label);
+  }
+  if (typeof option === 'string' && !isVisualOption(option)) return option;
+  return `Option ${index + 1}`;
+}
+
+function getSelectedAnswerDisplay(question, answer) {
+  if (!question) return '';
+
+  if (question.type === 'mcq' || question.type === 'imageChoice') {
+    if (question.isMultiSelect) {
+      const selected = Array.isArray(answer) ? answer : [];
+      if (selected.length === 0) return 'No option selected';
+      return selected
+        .map((idx) => getOptionLabel(question.options?.[idx], Number(idx)))
+        .join(', ');
+    }
+    const idx = Number(answer);
+    if (!Number.isFinite(idx)) return 'No option selected';
+    return getOptionLabel(question.options?.[idx], idx);
+  }
+
+  if (question.type === 'fillInTheBlank') {
+    if (!answer || typeof answer !== 'object') return 'No answer';
+    return Object.entries(answer).map(([k, v]) => `${k}: ${v}`).join(', ');
+  }
+
+  if (Array.isArray(answer)) {
+    return answer.join(', ');
+  }
+
+  if (answer && typeof answer === 'object') {
+    return JSON.stringify(answer);
+  }
+
+  return String(answer ?? '');
+}
+
 function getOrCreateStudentId() {
   if (typeof window === 'undefined') return null;
 
@@ -90,6 +204,15 @@ export default function PracticePage() {
   const { microskill, subject, grade } = curriculumContext;
   const skillTitle = microskill ? `${microskill.code} ${microskill.name}` : `Skill ${microskillId}`;
   const solutionParts = parseSolutionParts(currentQuestion?.solution);
+  const correctAnswerDisplay = getCorrectAnswerDisplay(currentQuestion);
+  const selectedAnswerDisplay = getSelectedAnswerDisplay(currentQuestion, userAnswer);
+  const isOptionType = currentQuestion?.type === 'mcq' || currentQuestion?.type === 'imageChoice';
+  const selectedIndexSet = currentQuestion?.isMultiSelect
+    ? new Set(Array.isArray(userAnswer) ? userAnswer.map((value) => Number(value)) : [])
+    : new Set(Number.isFinite(Number(userAnswer)) ? [Number(userAnswer)] : []);
+  const correctIndexSet = currentQuestion?.isMultiSelect
+    ? new Set(Array.isArray(currentQuestion?.correctAnswerIndices) ? currentQuestion.correctAnswerIndices.map((value) => Number(value)) : [])
+    : new Set(Number.isFinite(Number(currentQuestion?.correctAnswerIndex)) ? [Number(currentQuestion.correctAnswerIndex)] : []);
 
   useEffect(() => {
     let active = true;
@@ -458,24 +581,26 @@ export default function PracticePage() {
             <button className={styles.videoButton}><span className={styles.buttonIcon}>▶</span>Watch a video</button>
           </div> */}
 
-          <div
-            className={`${styles.questionStage} ${
-              transitionStage === 'exit'
-                ? styles.questionExit
-                : transitionStage === 'enter'
-                  ? styles.questionEnter
-                  : ''
-            }`}
-          >
-          <QuestionRenderer
-            question={withSubmitBehavior(currentQuestion)}
-            userAnswer={userAnswer}
-            onAnswer={handleAnswer}
-            onSubmit={handleSubmit}
-            isAnswered={isAnswered}
-            isCorrect={isCorrect}
-            />
-          </div>
+          {!isAnswered && (
+            <div
+              className={`${styles.questionStage} ${
+                transitionStage === 'exit'
+                  ? styles.questionExit
+                  : transitionStage === 'enter'
+                    ? styles.questionEnter
+                    : ''
+              }`}
+            >
+              <QuestionRenderer
+                question={withSubmitBehavior(currentQuestion)}
+                userAnswer={userAnswer}
+                onAnswer={handleAnswer}
+                onSubmit={handleSubmit}
+                isAnswered={isAnswered}
+                isCorrect={isCorrect}
+              />
+            </div>
+          )}
 
           {!isAnswered && (
             <div className={styles.workItOutContainer}>
@@ -505,21 +630,51 @@ export default function PracticePage() {
           )}
 
           {isAnswered && !isCorrect && (
-            <div className={`${styles.feedback} ${styles.incorrect}`}>
-              <div className={styles.feedbackIcon}>✗</div>
-              <div className={styles.feedbackContent}>
-                <h3>Not quite</h3>
-                {solutionParts ? (
-                  <div className={styles.solution}>
-                    <QuestionParts parts={solutionParts} />
+            <div className={`${styles.feedback} ${styles.incorrect} ${styles.incorrectDetailed}`}>
+              <h2 className={styles.incorrectTitle}>Sorry, incorrect...</h2>
+              <div className={styles.correctAnswerRow}>
+                <span className={styles.correctAnswerLabel}>The correct answer is:</span>
+                <span className={styles.correctAnswerValue}>{correctAnswerDisplay || 'See explanation below'}</span>
+              </div>
+
+              <h3 className={styles.explanationHeading}>Explanation</h3>
+              <div className={styles.reviewCard}>
+                <h4 className={styles.reviewTitle}>Question</h4>
+                <div className={styles.reviewQuestion}>
+                  <QuestionParts parts={currentQuestion?.parts || []} />
+                </div>
+
+                {isOptionType && Array.isArray(currentQuestion?.options) && currentQuestion.options.length > 0 ? (
+                  <div className={styles.reviewOptions}>
+                    {currentQuestion.options.map((option, index) => (
+                      <div
+                        key={`review-opt-${index}`}
+                        className={`${styles.reviewOption} ${selectedIndexSet.has(index) ? styles.reviewSelected : ''} ${correctIndexSet.has(index) ? styles.reviewCorrect : ''}`}
+                      >
+                        <span className={styles.reviewOptionLabel}>{getOptionLabel(option, index)}</span>
+                        {selectedIndexSet.has(index) && <span className={styles.reviewTag}>Your choice</span>}
+                        {correctIndexSet.has(index) && <span className={styles.reviewTagCorrect}>Correct</span>}
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className={styles.solution}>{currentQuestion.solution}</p>
+                  <p className={styles.reviewAnswerLine}>
+                    <strong>You answered:</strong> {selectedAnswerDisplay || 'No answer'}
+                  </p>
                 )}
-                <button onClick={handleNext} disabled={isSubmitting} className={styles.nextButton}>
-                  {isSubmitting ? 'Loading...' : nextQuestion ? 'Next Question →' : 'Finish →'}
-                </button>
               </div>
+
+              {solutionParts ? (
+                <div className={styles.solution}>
+                  <QuestionParts parts={solutionParts} />
+                </div>
+              ) : (
+                <p className={styles.solution}>{currentQuestion.solution}</p>
+              )}
+
+              <button onClick={handleNext} disabled={isSubmitting} className={styles.nextButton}>
+                {isSubmitting ? 'Loading...' : 'Got it'}
+              </button>
             </div>
           )}
         </main>

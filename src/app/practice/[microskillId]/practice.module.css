@@ -413,6 +413,122 @@
     box-shadow: inset 0 0 0 2px #ffd0d2;
 }
 
+.incorrectDetailed {
+    display: block;
+    padding: 1.1rem 1.2rem;
+}
+
+.incorrectTitle {
+    margin: 0 0 0.75rem;
+    color: #16a3dc;
+    font-size: 2.1rem;
+    line-height: 1.05;
+    font-family: var(--font-display), var(--font-body), sans-serif;
+}
+
+.correctAnswerRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+}
+
+.correctAnswerLabel {
+    color: #5f8f03;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.correctAnswerValue {
+    color: #16293c;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.explanationHeading {
+    margin: 0.25rem 0 0.45rem;
+    color: #6a9d00;
+    font-size: 1.9rem;
+    line-height: 1.1;
+    font-family: var(--font-display), var(--font-body), sans-serif;
+}
+
+.reviewCard {
+    border: 1px solid #d7dff5;
+    border-radius: 10px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    background: #fcfdff;
+}
+
+.reviewTitle {
+    margin: 0 0 0.5rem;
+    color: #39536b;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.reviewQuestion {
+    margin-bottom: 0.6rem;
+}
+
+.reviewOptions {
+    display: grid;
+    gap: 0.42rem;
+}
+
+.reviewOption {
+    border: 1px solid #d9e2eb;
+    border-radius: 8px;
+    padding: 0.45rem 0.55rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.reviewOptionLabel {
+    font-size: 0.83rem;
+    color: #2d4358;
+    font-weight: 600;
+}
+
+.reviewSelected {
+    border-color: #e0b852;
+    background: #fff8e5;
+}
+
+.reviewCorrect {
+    border-color: #8fd3a8;
+    background: #eefaf2;
+}
+
+.reviewTag,
+.reviewTagCorrect {
+    font-size: 0.68rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.15rem 0.45rem;
+}
+
+.reviewTag {
+    color: #8a5d00;
+    background: #ffe9a9;
+}
+
+.reviewTagCorrect {
+    color: #0f7a3d;
+    background: #d9f7e5;
+}
+
+.reviewAnswerLine {
+    margin: 0;
+    color: #2f4860;
+    font-size: 0.83rem;
+}
+
 .feedbackIcon {
     font-size: 1.4rem;
     font-weight: 800;
@@ -609,6 +725,18 @@
 
     .feedback {
         flex-direction: column;
+    }
+
+    .incorrectTitle {
+        font-size: 1.55rem;
+    }
+
+    .explanationHeading {
+        font-size: 1.4rem;
+    }
+
+    .reviewOptionLabel {
+        font-size: 0.78rem;
     }
 
     .breadcrumb {
