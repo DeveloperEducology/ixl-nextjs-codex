@@ -55,7 +55,7 @@ export default async function SkillsPage({ params }) {
         );
     }
 
-    // Group units into columns (3 columns as per IXL design)
+    // Group units into columns (3 columns as per WEXLS design)
     const groupedUnits = [];
     const unitsPerColumn = Math.ceil(units.length / 3);
 
@@ -69,7 +69,7 @@ export default async function SkillsPage({ params }) {
             <header className={styles.header}>
                 <div className={styles.headerContent}>
                     <Link href="/" className={styles.logo}>
-                        <span className={styles.logoText}>IXL</span>
+                        <span className={styles.logoText}>WEXLS</span>
                     </Link>
                     <nav className={styles.nav}>
                         <a href="#" className={styles.navLink}>Learning</a>

@@ -40,16 +40,18 @@
 }
 
 .submitButton {
-    width: 100%;
+    width: min(220px, 100%);
     background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
     color: white;
     border: none;
-    padding: 1rem 2rem;
+    padding: 0.62rem 1rem;
     border-radius: var(--border-radius-lg);
     font-weight: 600;
-    font-size: 0.96rem;
+    font-size: 0.88rem;
     cursor: pointer;
     transition: var(--transition-base);
+    margin: 0.75rem auto 0;
+    display: block;
 }
 
 .submitButton:hover {

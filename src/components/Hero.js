@@ -9,7 +9,7 @@ export default function Hero() {
                 <div className={styles.decorativeShape} style={{ '--delay': '1s' }}></div>
 
                 <h1 className={styles.heroTitle}>
-                    IXL is <span className={styles.highlight}>personalised learning</span>
+                    WEXLS is <span className={styles.highlight}>personalised learning</span>
                 </h1>
 
                 <div className={styles.featuresContainer}>

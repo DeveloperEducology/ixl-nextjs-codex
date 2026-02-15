@@ -43,7 +43,9 @@
 .imageContainer {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.6rem;
     margin: 0.5rem 0;
 }
 
@@ -51,22 +53,24 @@
     border-radius: var(--border-radius-sm);
     object-fit: contain;
     max-width: min(100%, 320px);
-    height: 150px;
-    width: auto;
+    height: 150px !important;
+    width: auto !important;
 }
 
 .urlImage {
     border-radius: var(--border-radius-sm);
     object-fit: contain;
     max-width: min(100%, 320px);
-    height: 150px;
-    width: auto;
+    height: 150px !important;
+    width: auto !important;
 }
 
 .svgContainer {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.6rem;
     margin: 1rem 0;
 }
 
@@ -103,7 +107,7 @@
 
     .image,
     .urlImage {
-        height: 80px;
+        height: 80px !important;
     }
 
     .svgContainer svg {

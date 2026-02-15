@@ -21,3 +21,19 @@ export function getImageSrc(value) {
   }
   return '';
 }
+
+export function hasInlineHtml(value) {
+  if (typeof value !== 'string') return false;
+  return /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+export function sanitizeInlineHtml(value) {
+  if (typeof value !== 'string') return '';
+
+  return value
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, ' $1="#"');
+}

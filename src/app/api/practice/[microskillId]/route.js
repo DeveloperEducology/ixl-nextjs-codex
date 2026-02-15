@@ -6,6 +6,25 @@ import { resolveMicroskillIdByKey } from '@/lib/curriculum/server';
 const SKILL_COLUMNS = ['micro_skill_id', 'microskill_id'];
 const ORDER_COLUMNS = ['sort_order', 'idx', 'created_at', 'id'];
 
+function toPublicQuestion(question) {
+  if (!question) return null;
+
+  return {
+    id: question.id,
+    microSkillId: question.microSkillId ?? null,
+    type: question.type,
+    parts: question.parts ?? [],
+    options: question.options ?? [],
+    items: question.items ?? [],
+    dragItems: question.dragItems ?? [],
+    dropGroups: question.dropGroups ?? [],
+    adaptiveConfig: question.adaptiveConfig ?? null,
+    isMultiSelect: Boolean(question.isMultiSelect),
+    isVertical: Boolean(question.isVertical),
+    showSubmitButton: Boolean(question.showSubmitButton),
+  };
+}
+
 export async function GET(_req, { params }) {
   const { microskillId: microskillKey } = await params;
   const microskillId = await resolveMicroskillIdByKey(microskillKey);
@@ -52,7 +71,7 @@ export async function GET(_req, { params }) {
     );
   }
 
-  const firstQuestion = Array.isArray(data) && data.length > 0 ? mapDbQuestion(data[0]) : null;
+  const firstQuestion = Array.isArray(data) && data.length > 0 ? toPublicQuestion(mapDbQuestion(data[0])) : null;
 
   return NextResponse.json({
     source: 'supabase',

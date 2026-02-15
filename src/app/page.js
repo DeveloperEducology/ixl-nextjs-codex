@@ -19,7 +19,7 @@ export default async function Home() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.logo}>
-            <span className={styles.logoText}>IXL</span>
+            <span className={styles.logoText}>WEXLS</span>
           </div>
           <nav className={styles.nav}>
             <a href="#" className={styles.navLink}>Learning</a>
@@ -58,7 +58,7 @@ export default async function Home() {
 
       <footer className={styles.footer}>
         <div className={styles.container}>
-          <p>© 2026 IXL Learning. All rights reserved.</p>
+          <p>© 2026 WEXLS Learning. All rights reserved.</p>
         </div>
       </footer>
     </main>

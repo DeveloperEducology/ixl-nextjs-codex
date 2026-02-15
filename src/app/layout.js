@@ -19,8 +19,8 @@ const siteUrl = getSiteUrl();
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'IXL Practice App',
-    template: '%s | IXL Practice App',
+    default: 'WEXLS Practice App',
+    template: '%s | WEXLS Practice App',
   },
   description: 'Adaptive practice platform for school skills with interactive question types and instant feedback.',
   keywords: [
@@ -29,11 +29,11 @@ export const metadata = {
     'math practice',
     'english practice',
     'education app',
-    'IXL style practice',
+    'WEXLS style practice',
   ],
-  authors: [{ name: "IXL Learning" }],
-  creator: "IXL Learning",
-  publisher: "IXL Learning",
+  authors: [{ name: "WEXLS Learning" }],
+  creator: "WEXLS Learning",
+  publisher: "WEXLS Learning",
   formatDetection: {
     email: false,
     address: false,
@@ -43,16 +43,16 @@ export const metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: "IXL Practice App",
+    title: "WEXLS Practice App",
     description: "Adaptive skill practice with interactive question types for kids.",
     url: siteUrl,
-    siteName: 'IXL Practice App',
+    siteName: 'WEXLS Practice App',
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IXL Practice App',
+    title: 'WEXLS Practice App',
     description: 'Adaptive skill practice with interactive question types.',
   },
   robots: {
@@ -66,14 +66,20 @@ export const metadata = {
       'max-snippet': -1,
     },
   },
+  icons: {
+    icon: '/wexls-favicon.svg',
+    shortcut: '/wexls-favicon.svg',
+    apple: '/wexls-favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/wexls-favicon.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/wexls-favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/wexls-favicon.svg" />
         <meta name="theme-color" content="#22c55e" />
       </head>
       <body className={`${nunito.variable} ${baloo.variable}`}>{children}</body>

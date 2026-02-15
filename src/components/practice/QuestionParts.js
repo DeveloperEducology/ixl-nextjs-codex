@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './QuestionParts.module.css';
-import { getImageSrc, isImageUrl, isInlineSvg } from './contentUtils';
+import { getImageSrc, hasInlineHtml, isImageUrl, isInlineSvg, sanitizeInlineHtml } from './contentUtils';
 import SpeakerButton from './SpeakerButton';
 
 /**
@@ -11,6 +11,8 @@ import SpeakerButton from './SpeakerButton';
  * @property {string} [imageUrl]
  * @property {QuestionPart[]} [children]
  * @property {boolean} [isVertical] - Defaults to false when omitted.
+ * @property {boolean} [hasAudio] - Show speaker only when true.
+ * @property {number} [count] - Repeat image part this many times.
  */
 
 function renderInlineMarkdown(text) {
@@ -35,6 +37,46 @@ function renderInlineMarkdown(text) {
 
 export default function QuestionParts({ parts }) {
     const safeParts = Array.isArray(parts) ? parts : [];
+    const getRepeatCount = (value) => {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+        return Math.min(Math.floor(parsed), 24);
+    };
+
+    const renderImageSet = (imageSrc, part, index) => {
+        const repeatCount = getRepeatCount(part?.count);
+        if (isInlineSvg(imageSrc)) {
+            return (
+                <div key={index} className={styles.svgContainer}>
+                    {Array.from({ length: repeatCount }).map((_, imageIndex) => (
+                        <div
+                            key={`svg-${index}-${imageIndex}`}
+                            dangerouslySetInnerHTML={{ __html: imageSrc }}
+                        />
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <div key={index} className={styles.imageContainer}>
+                {Array.from({ length: repeatCount }).map((_, imageIndex) => (
+                    <img
+                        key={`img-${index}-${imageIndex}`}
+                        src={imageSrc}
+                        alt={`Question image ${imageIndex + 1}`}
+                        className={styles.image}
+                        style={{
+                            maxWidth: part.width ? `${part.width}px` : undefined,
+                            maxHeight: part.height ? `${part.height}px` : undefined,
+                        }}
+                        loading="lazy"
+                    />
+                ))}
+            </div>
+        );
+    };
+
     const renderPartContent = (part, index) => {
         const imageSrc = getImageSrc(part?.imageUrl || part?.content);
 
@@ -63,37 +105,22 @@ export default function QuestionParts({ parts }) {
                 }
                 return (
                     <div key={index} className={styles.textRow}>
-                        <SpeakerButton text={part.content} />
-                        <span className={styles.text}>
-                            {renderInlineMarkdown(part.content)}
-                        </span>
+                        {Boolean(part?.hasAudio) && <SpeakerButton text={part.content} />}
+                        {hasInlineHtml(part.content) ? (
+                            <span
+                                className={styles.text}
+                                dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(part.content) }}
+                            />
+                        ) : (
+                            <span className={styles.text}>
+                                {renderInlineMarkdown(part.content)}
+                            </span>
+                        )}
                     </div>
                 );
 
             case 'image':
-                if (isInlineSvg(imageSrc)) {
-                    return (
-                        <div
-                            key={index}
-                            className={styles.svgContainer}
-                            dangerouslySetInnerHTML={{ __html: imageSrc }}
-                        />
-                    );
-                }
-                return (
-                    <div key={index} className={styles.imageContainer}>
-                        <img
-                            src={imageSrc}
-                            alt="Question image"
-                            className={styles.image}
-                            style={{
-                                maxWidth: part.width ? `${part.width}px` : undefined,
-                                maxHeight: part.height ? `${part.height}px` : undefined,
-                            }}
-                            loading="lazy"
-                        />
-                    </div>
-                );
+                return renderImageSet(imageSrc, part, index);
 
             case 'svg':
                 return (

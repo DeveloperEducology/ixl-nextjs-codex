@@ -12,6 +12,8 @@ const CHALLENGE_STAGES = [
   { stage: 2, tokensNeeded: 10, label: 'Stage 2 of 3' },
   { stage: 3, tokensNeeded: 15, label: 'Stage 3 of 3' },
 ];
+const SUBMIT_TIMEOUT_MS = 8000;
+const SUBMIT_RETRY_DELAYS_MS = [300, 700];
 
 function parseSolutionParts(solution) {
   if (Array.isArray(solution)) return solution;
@@ -164,6 +166,53 @@ function getOrCreateStudentId() {
   return created;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function submitWithRetry(url, body) {
+  let lastErrorMessage = 'Could not fetch next adaptive question.';
+
+  for (let attempt = 0; attempt <= SUBMIT_RETRY_DELAYS_MS.length; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      const payload = await res.json();
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        lastErrorMessage = payload.error || lastErrorMessage;
+        throw new Error(lastErrorMessage);
+      }
+
+      return payload;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error?.name === 'AbortError') {
+        lastErrorMessage = 'Request timed out. Please try again.';
+      } else if (error?.message) {
+        lastErrorMessage = error.message;
+      }
+
+      if (attempt < SUBMIT_RETRY_DELAYS_MS.length) {
+        await delay(SUBMIT_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+      throw new Error(lastErrorMessage);
+    }
+  }
+
+  throw new Error(lastErrorMessage);
+}
+
 export default function PracticePage() {
   const params = useParams();
   const { microskillId } = params;
@@ -180,10 +229,11 @@ export default function PracticePage() {
     subject: null,
     microskill: null,
   });
+  const [feedbackData, setFeedbackData] = useState(null);
 
   const [userAnswer, setUserAnswer] = useState(null);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(null);
 
   const [smartScore, setSmartScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -203,16 +253,18 @@ export default function PracticePage() {
 
   const { microskill, subject, grade } = curriculumContext;
   const skillTitle = microskill ? `${microskill.code} ${microskill.name}` : `Skill ${microskillId}`;
-  const solutionParts = parseSolutionParts(currentQuestion?.solution);
-  const correctAnswerDisplay = getCorrectAnswerDisplay(currentQuestion);
+  const solutionParts = parseSolutionParts(feedbackData?.solution);
+  const correctAnswerDisplay = feedbackData?.correctAnswerDisplay || '';
   const selectedAnswerDisplay = getSelectedAnswerDisplay(currentQuestion, userAnswer);
   const isOptionType = currentQuestion?.type === 'mcq' || currentQuestion?.type === 'imageChoice';
   const selectedIndexSet = currentQuestion?.isMultiSelect
     ? new Set(Array.isArray(userAnswer) ? userAnswer.map((value) => Number(value)) : [])
     : new Set(Number.isFinite(Number(userAnswer)) ? [Number(userAnswer)] : []);
-  const correctIndexSet = currentQuestion?.isMultiSelect
-    ? new Set(Array.isArray(currentQuestion?.correctAnswerIndices) ? currentQuestion.correctAnswerIndices.map((value) => Number(value)) : [])
-    : new Set(Number.isFinite(Number(currentQuestion?.correctAnswerIndex)) ? [Number(currentQuestion.correctAnswerIndex)] : []);
+  const correctIndexSet = new Set(
+    Array.isArray(feedbackData?.correctOptionIndices)
+      ? feedbackData.correctOptionIndices.map((value) => Number(value))
+      : []
+  );
 
   useEffect(() => {
     let active = true;
@@ -222,7 +274,8 @@ export default function PracticePage() {
       setSubmitError('');
       setUserAnswer(null);
       setIsAnswered(false);
-      setIsCorrect(false);
+      setIsCorrect(null);
+      setFeedbackData(null);
       setNextQuestion(null);
       setSeenQuestionIds([]);
 
@@ -302,152 +355,85 @@ export default function PracticePage() {
 
   const time = formatTime(elapsedTime);
 
-  const validateAnswer = (question, answer) => {
-    if (!question) return false;
-
-    const parseNumber = (value) => {
-      if (typeof value === 'number' && Number.isFinite(value)) return value;
-      const str = String(value ?? '').trim();
-      if (!str) return null;
-      const match = str.match(/-?\d+(\.\d+)?/);
-      if (!match) return null;
-      const parsed = Number(match[0]);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    switch (question.type) {
-      case 'mcq':
-      case 'imageChoice':
-        if (question.isMultiSelect) {
-          const correctIndices = question.correctAnswerIndices || [];
-          return JSON.stringify([...(answer || [])].sort()) === JSON.stringify([...correctIndices].sort());
-        }
-        return answer === question.correctAnswerIndex;
-
-      case 'textInput':
-        return String(answer || '').trim().toLowerCase() === String(question.correctAnswerText || '').trim().toLowerCase();
-
-      case 'fillInTheBlank': {
-        const correctAnswers = JSON.parse(question.correctAnswerText || '{}');
-        return Object.keys(correctAnswers).every(
-          (key) => answer?.[key]?.trim().toLowerCase() === String(correctAnswers[key]).toLowerCase()
-        );
-      }
-
-      case 'dragAndDrop':
-        return (question.dragItems || [])
-          .filter((item) =>
-            item.targetGroupId !== null &&
-            item.targetGroupId !== undefined &&
-            String(item.targetGroupId).trim() !== ''
-          )
-          .every((item) => answer?.[item.id] === item.targetGroupId);
-
-      case 'sorting':
-        if (question.correctAnswerText) {
-          return JSON.stringify(answer) === question.correctAnswerText;
-        }
-
-        if ((question.items || []).some((item) => item.correctPosition !== undefined && item.correctPosition !== null)) {
-          const expectedByPosition = [...(question.items || [])]
-            .sort((a, b) => (Number(a.correctPosition ?? 0) - Number(b.correctPosition ?? 0)))
-            .map((item) => String(item.id));
-          return JSON.stringify((answer || []).map(String)) === JSON.stringify(expectedByPosition);
-        }
-
-        if (question.adaptiveConfig?.sort_rule) {
-          const values = (question.items || []).map((item) => ({
-            id: String(item.id),
-            content: String(item.content ?? ''),
-          }));
-          const allNumeric = values.every((v) => !Number.isNaN(Number(v.content)));
-          const sorted = [...values].sort((a, b) => {
-            if (allNumeric) {
-              return Number(a.content) - Number(b.content);
-            }
-            return a.content.localeCompare(b.content, undefined, { numeric: true, sensitivity: 'base' });
-          });
-          if (String(question.adaptiveConfig.sort_rule).toLowerCase() === 'descending') {
-            sorted.reverse();
-          }
-          const expected = sorted.map((v) => v.id);
-          return JSON.stringify((answer || []).map(String)) === JSON.stringify(expected);
-        }
-
-        return false;
-
-      case 'fourPicsOneWord':
-        return answer?.join('') === String(question.correctAnswerText || '').toUpperCase();
-
-      case 'measure': {
-        const expected = parseNumber(question.correctAnswerText);
-        const actual = parseNumber(answer);
-        if (expected === null || actual === null) return false;
-        return Math.abs(actual - expected) < 0.0001;
-      }
-
-      default:
-        return false;
+  const applyNextQuestion = (upcoming) => {
+    if (upcoming) {
+      setCurrentQuestion(upcoming);
+      setNextQuestion(null);
+      setUserAnswer(null);
+      setIsAnswered(false);
+      setIsCorrect(null);
+      setFeedbackData(null);
+      setSubmitError('');
+      setTransitionStage('idle');
+      return;
     }
+
+    setCurrentQuestion(null);
+    setUserAnswer(null);
+    setIsAnswered(false);
+    setIsCorrect(null);
+    setFeedbackData(null);
+    setSubmitError('');
+    setTransitionStage('idle');
   };
 
   const handleSubmit = async (answer = userAnswer) => {
     if (!currentQuestion || isAnswered || isSubmitting) return;
-
-    const correct = validateAnswer(currentQuestion, answer);
-    setUserAnswer(answer);
-    setIsCorrect(correct);
-    setIsAnswered(true);
     setSubmitError('');
-    setQuestionsAnswered((prev) => prev + 1);
-
-    if (correct) {
-      const newStreak = streak + 1;
-      setStreak(newStreak);
-      const scoreIncrement = Math.min(10, 5 + newStreak);
-      setSmartScore((prev) => Math.min(100, prev + scoreIncrement));
-
-      const newTokens = tokensCollected + 1;
-      setTokensCollected(newTokens);
-      if (newTokens >= currentChallengeStage.tokensNeeded && currentStage < 2) {
-        setCurrentStage(currentStage + 1);
-        setTokensCollected(0);
-      }
-    } else {
-      setStreak(0);
-      setSmartScore((prev) => Math.max(0, prev - 5));
-    }
+    setFeedbackData(null);
+    setUserAnswer(answer);
+    setIsAnswered(true); // optimistic: hide question immediately
+    setIsCorrect(null); // pending server verdict
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/practice/${microskillId}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentId: getOrCreateStudentId(),
-          questionId: currentQuestion.id,
-          isCorrect: correct,
-          answer,
-          seenQuestionIds,
-        }),
+      const payload = await submitWithRetry(`/api/practice/${microskillId}/submit`, {
+        studentId: getOrCreateStudentId(),
+        questionId: currentQuestion.id,
+        answer,
+        seenQuestionIds,
       });
-      const payload = await res.json();
 
-      if (!res.ok) {
-        setSubmitError(payload.error || 'Could not fetch next adaptive question.');
-        setNextQuestion(null);
-      } else {
-        const upcoming = payload.nextQuestion ?? null;
-        setNextQuestion(upcoming);
-        if (upcoming?.id) {
-          setSeenQuestionIds((prev) =>
-            prev.includes(String(upcoming.id)) ? prev : [...prev, String(upcoming.id)]
-          );
+      const correct = Boolean(payload.isCorrect);
+      setIsCorrect(correct);
+      setFeedbackData(payload.feedback || null);
+      setQuestionsAnswered((prev) => prev + 1);
+
+      if (correct) {
+        const newStreak = streak + 1;
+        setStreak(newStreak);
+        const scoreIncrement = Math.min(10, 5 + newStreak);
+        setSmartScore((prev) => Math.min(100, prev + scoreIncrement));
+
+        const newTokens = tokensCollected + 1;
+        setTokensCollected(newTokens);
+        if (newTokens >= currentChallengeStage.tokensNeeded && currentStage < 2) {
+          setCurrentStage(currentStage + 1);
+          setTokensCollected(0);
         }
+      } else {
+        setStreak(0);
+        setSmartScore((prev) => Math.max(0, prev - 5));
       }
-    } catch {
-      setSubmitError('Could not fetch next adaptive question.');
+
+      const upcoming = payload.nextQuestion ?? null;
+      setNextQuestion(upcoming);
+      if (upcoming?.id) {
+        setSeenQuestionIds((prev) =>
+          prev.includes(String(upcoming.id)) ? prev : [...prev, String(upcoming.id)]
+        );
+      }
+
+      // remove extra wait for correct answers; move immediately
+      if (correct) {
+        applyNextQuestion(upcoming);
+      }
+    } catch (error) {
+      setSubmitError(error?.message || 'Could not fetch next adaptive question.');
       setNextQuestion(null);
+      setIsAnswered(false);
+      setIsCorrect(null);
+      setFeedbackData(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -462,54 +448,19 @@ export default function PracticePage() {
   };
 
   const handleNext = () => {
-    if (transitionStage !== 'idle') return;
-    setTransitionStage('exit');
-    setTimeout(() => {
-      setCurrentQuestion(nextQuestion);
-      setNextQuestion(null);
-      setUserAnswer(null);
-      setIsAnswered(false);
-      setIsCorrect(false);
-      setSubmitError('');
-      setTransitionStage('enter');
-      setTimeout(() => setTransitionStage('idle'), 260);
-    }, 180);
+    applyNextQuestion(nextQuestion);
   };
-
-  useEffect(() => {
-    if (!isAnswered || !isCorrect || isSubmitting || submitError) return;
-
-    const timer = setTimeout(() => {
-      if (nextQuestion) {
-        if (transitionStage !== 'idle') return;
-        setTransitionStage('exit');
-        setTimeout(() => {
-          setCurrentQuestion(nextQuestion);
-          setNextQuestion(null);
-          setUserAnswer(null);
-          setIsAnswered(false);
-          setIsCorrect(false);
-          setSubmitError('');
-          setTransitionStage('enter');
-          setTimeout(() => setTransitionStage('idle'), 260);
-        }, 180);
-      } else {
-        setCurrentQuestion(null);
-        setUserAnswer(null);
-        setIsAnswered(false);
-        setIsCorrect(false);
-        setSubmitError('');
-      }
-    }, 850);
-
-    return () => clearTimeout(timer);
-  }, [isAnswered, isCorrect, isSubmitting, nextQuestion, submitError, transitionStage]);
 
   if (loadingQuestion) {
     return (
       <div className={styles.container}>
-        <div className={styles.completionCard}>
-          <h1>Loading practice...</h1>
+        <div className={styles.loadingScreen}>
+          <img
+            src="/wexls-logo.svg"
+            alt="WEXLS"
+            className={styles.loadingBrand}
+          />
+          <div className={styles.loadingSpinner} aria-label="Loading practice" role="status" />
         </div>
       </div>
     );
@@ -555,7 +506,7 @@ export default function PracticePage() {
 
       <header className={styles.topBar}>
         <div className={styles.topBarLeft}>
-          <Link href="/" className={styles.logo}><span>IXL</span></Link>
+          <Link href="/" className={styles.logo}><span>WEXLS</span></Link>
           <div className={styles.skillTag}>{skillTitle}</div>
         </div>
         <div className={styles.topBarStats}>
@@ -610,7 +561,22 @@ export default function PracticePage() {
 
           {submitError && <p className={styles.solution}>{submitError}</p>}
 
-          {isAnswered && isCorrect && (
+          {isAnswered && isCorrect === null && (
+            <div className={`${styles.feedback} ${styles.correct}`}>
+              <div className={styles.feedbackIcon}>…</div>
+              <div className={styles.feedbackContent}>
+                <h3>Checking your answer...</h3>
+                <p className={styles.solution}>Loading next question...</p>
+                <div className={styles.nextLoader} aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isAnswered && isCorrect === true && (
             <div className={`${styles.feedback} ${styles.correct}`}>
               <div className={styles.feedbackIcon}>✓</div>
               <div className={styles.feedbackContent}>
@@ -629,7 +595,7 @@ export default function PracticePage() {
             </div>
           )}
 
-          {isAnswered && !isCorrect && (
+          {isAnswered && isCorrect === false && (
             <div className={`${styles.feedback} ${styles.incorrect} ${styles.incorrectDetailed}`}>
               <h2 className={styles.incorrectTitle}>Sorry, incorrect...</h2>
               <div className={styles.correctAnswerRow}>
@@ -669,7 +635,7 @@ export default function PracticePage() {
                   <QuestionParts parts={solutionParts} />
                 </div>
               ) : (
-                <p className={styles.solution}>{currentQuestion.solution}</p>
+                <p className={styles.solution}>{feedbackData?.solution || ''}</p>
               )}
 
               <button onClick={handleNext} disabled={isSubmitting} className={styles.nextButton}>

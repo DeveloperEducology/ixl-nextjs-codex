@@ -4,7 +4,7 @@
       <stop offset="0%" style="stop-color:#004e92;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#000428;stop-opacity:1" />
     </linearGradient>
-
+    
     <filter id="glow">
       <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
       <feMerge>
@@ -20,7 +20,7 @@
 
   <g transform="translate(175, 180)">
     <path d="M20 20 L130 130 M130 20 L20 130" stroke="white" stroke-width="25" stroke-linecap="round"/>
-
+    
     <path d="M10 110 L50 80 L80 100 L140 30" fill="none" stroke="#00d2ff" stroke-width="8" stroke-linejoin="round" filter="url(#glow)"/>
     <path d="M130 30 L142 28 L140 40" fill="#00d2ff" filter="url(#glow)"/>
   </g>

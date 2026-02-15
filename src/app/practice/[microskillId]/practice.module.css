@@ -608,6 +608,32 @@
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
+.loadingScreen {
+    min-height: 72vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.loadingBrand {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(15, 110, 168, 0.2));
+}
+
+.loadingSpinner {
+    width: 52px;
+    height: 52px;
+    border: 5px solid #c8e6f8;
+    border-top-color: #0f8cd1;
+    border-radius: 50%;
+    animation: loadingSpin 0.8s linear infinite;
+}
+
 .completionCard {
     background: #fff;
     border: 1px solid #d4e8f7;
@@ -679,6 +705,12 @@
     40% {
         transform: translateY(-4px);
         opacity: 1;
+    }
+}
+
+@keyframes loadingSpin {
+    to {
+        transform: rotate(360deg);
     }
 }
 
