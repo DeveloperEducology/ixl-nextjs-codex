@@ -6,8 +6,54 @@ import { resolveMicroskillIdByKey } from '@/lib/curriculum/server';
 const SKILL_COLUMNS = ['micro_skill_id', 'microskill_id'];
 const ORDER_COLUMNS = ['sort_order', 'idx', 'created_at', 'id'];
 
+function parseNumber(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const str = String(value ?? '').trim();
+  if (!str) return null;
+  const match = str.match(/-?\d+(\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getMeasureTarget(question) {
+  if (!question || question.type !== 'measure') return null;
+
+  return (
+    parseNumber(question.adaptiveConfig?.target_units) ??
+    parseNumber(question.adaptiveConfig?.line_units) ??
+    parseNumber(question.adaptiveConfig?.line_length) ??
+    parseNumber(question.adaptiveConfig?.target_length) ??
+    parseNumber(question.correctAnswerText)
+  );
+}
+
+function shuffleLetters(letters) {
+  const out = [...letters];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function getFourPicsPuzzle(question) {
+  if (!question || question.type !== 'fourPicsOneWord') return { wordLength: null, letterBank: null };
+
+  const answer = String(question.correctAnswerText ?? '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+
+  if (!answer) return { wordLength: null, letterBank: null };
+  return {
+    wordLength: answer.length,
+    letterBank: shuffleLetters(answer.split('')),
+  };
+}
+
 function toPublicQuestion(question) {
   if (!question) return null;
+  const fourPics = getFourPicsPuzzle(question);
 
   return {
     id: question.id,
@@ -19,6 +65,9 @@ function toPublicQuestion(question) {
     dragItems: question.dragItems ?? [],
     dropGroups: question.dropGroups ?? [],
     adaptiveConfig: question.adaptiveConfig ?? null,
+    measureTarget: getMeasureTarget(question),
+    wordLength: fourPics.wordLength,
+    letterBank: fourPics.letterBank,
     isMultiSelect: Boolean(question.isMultiSelect),
     isVertical: Boolean(question.isVertical),
     showSubmitButton: Boolean(question.showSubmitButton),

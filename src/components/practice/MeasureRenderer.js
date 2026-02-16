@@ -8,6 +8,44 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function parseMeasureTarget(question) {
+  const adaptive = question?.adaptiveConfig || {};
+  const numericCandidates = [
+    question?.measureTarget,
+    question?.correctAnswerText,
+    adaptive?.target_units,
+    adaptive?.line_units,
+    adaptive?.line_length,
+    adaptive?.target_length,
+    adaptive?.length,
+    adaptive?.answer,
+  ];
+
+  for (const value of numericCandidates) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+
+  if (typeof question?.correctAnswerText === 'string') {
+    try {
+      const parsed = JSON.parse(question.correctAnswerText);
+      if (typeof parsed === 'number' && Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+      if (parsed && typeof parsed === 'object') {
+        for (const value of Object.values(parsed)) {
+          const numeric = Number(value);
+          if (Number.isFinite(numeric) && numeric > 0) return numeric;
+        }
+      }
+    } catch {
+      // ignore invalid JSON in correctAnswerText
+    }
+  }
+
+  return null;
+}
+
 export default function MeasureRenderer({
   question,
   userAnswer,
@@ -16,33 +54,39 @@ export default function MeasureRenderer({
   isAnswered,
 }) {
   const unit = String(question.adaptiveConfig?.unit || 'cm');
-  const objectWidth = Number(question.adaptiveConfig?.object_width || 280);
-  const correctValue = Number(question.correctAnswerText || 0);
+  const parsedTarget = parseMeasureTarget(question);
+  const safeCorrectValue = Number.isFinite(parsedTarget) && parsedTarget > 0 ? parsedTarget : 5;
+
+  const configuredObjectWidth = Number(question.adaptiveConfig?.object_width);
+  const objectWidth = Number.isFinite(configuredObjectWidth) && configuredObjectWidth > 0
+    ? configuredObjectWidth
+    : 280;
 
   const [areaWidth, setAreaWidth] = useState(null);
   const maxUnits = useMemo(() => {
     const configured = Number(
       question.adaptiveConfig?.max_units ??
       question.adaptiveConfig?.total_units ??
-      10
+      0
     );
     if (Number.isFinite(configured) && configured > 0) {
       return clamp(Math.round(configured), 1, 50);
     }
-    return 10;
-  }, [question.adaptiveConfig]);
+    return clamp(Math.max(10, Math.ceil(safeCorrectValue)), 1, 50);
+  }, [question.adaptiveConfig, safeCorrectValue]);
 
   const effectiveRulerWidth = useMemo(() => {
     if (!Number.isFinite(areaWidth) || areaWidth <= 0) return objectWidth;
     const available = Math.max(120, areaWidth - 20);
-    return Math.min(objectWidth, available);
-  }, [areaWidth, objectWidth]);
+    const minForReadableTicks = maxUnits * 18;
+    return Math.min(Math.max(objectWidth, minForReadableTicks), available);
+  }, [areaWidth, objectWidth, maxUnits]);
 
-  const normalizedCorrect = Number.isFinite(correctValue) ? clamp(correctValue, 0, maxUnits) : 0;
+  const normalizedCorrect = clamp(safeCorrectValue, 0, maxUnits);
   const tickWidth = effectiveRulerWidth / maxUnits;
   const lineWidth = clamp(
     Number.isFinite(normalizedCorrect) ? normalizedCorrect * tickWidth : objectWidth * 0.6,
-    30,
+    0,
     effectiveRulerWidth
   );
 

@@ -13,6 +13,7 @@ import {
 import styles from './DragDropRenderer.module.css';
 import QuestionParts from './QuestionParts';
 import { getImageSrc, isImageUrl, isInlineSvg } from './contentUtils';
+import SafeImage from './SafeImage';
 
 const POOL_ID = '__pool__';
 
@@ -81,11 +82,13 @@ function ItemVisual({ item }) {
   if (isImageUrl(imageSource)) {
     return (
       <div className={styles.itemImage}>
-        <img
+        <SafeImage
           src={imageSource}
           alt={item.content || 'Drag item'}
           className={styles.image}
-          loading="lazy"
+          width={120}
+          height={120}
+          sizes="(max-width: 768px) 26vw, 120px"
         />
       </div>
     );

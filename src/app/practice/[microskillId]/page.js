@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import QuestionRenderer from '@/components/practice/QuestionRenderer';
 import QuestionParts from '@/components/practice/QuestionParts';
 import styles from './practice.module.css';
@@ -140,6 +141,20 @@ function getSelectedAnswerDisplay(question, answer) {
 
   if (question.type === 'fillInTheBlank') {
     if (!answer || typeof answer !== 'object') return 'No answer';
+    const parts = Array.isArray(question.parts) ? question.parts : [];
+    const arithmeticPart = parts.find((part) => part?.type === 'arithmeticLayout');
+    const rows = Array.isArray(arithmeticPart?.layout?.rows) ? arithmeticPart.layout.rows : [];
+    const answerRow = rows.find((row) => String(row?.kind || '').toLowerCase() === 'answer');
+    const cells = Array.isArray(answerRow?.cells) ? answerRow.cells : [];
+
+    if (cells.length > 0) {
+      const prefix = String(answerRow?.prefix || '');
+      const joined = cells
+        .map((cell, idx) => String(answer?.[cell?.id ?? `cell_${idx}`] ?? ''))
+        .join('');
+      return `${prefix}${joined}`.trim() || 'No answer';
+    }
+
     return Object.entries(answer).map(([k, v]) => `${k}: ${v}`).join(', ');
   }
 
@@ -455,10 +470,13 @@ export default function PracticePage() {
     return (
       <div className={styles.container}>
         <div className={styles.loadingScreen}>
-          <img
+          <Image
             src="/wexls-logo.svg"
             alt="WEXLS"
             className={styles.loadingBrand}
+            width={56}
+            height={56}
+            priority
           />
           <div className={styles.loadingSpinner} aria-label="Loading practice" role="status" />
         </div>
@@ -607,7 +625,18 @@ export default function PracticePage() {
               <div className={styles.reviewCard}>
                 <h4 className={styles.reviewTitle}>Question</h4>
                 <div className={styles.reviewQuestion}>
-                  <QuestionParts parts={currentQuestion?.parts || []} />
+                  {currentQuestion?.type === 'fillInTheBlank' ? (
+                    <QuestionRenderer
+                      question={withSubmitBehavior(currentQuestion)}
+                      userAnswer={userAnswer}
+                      onAnswer={() => {}}
+                      onSubmit={() => {}}
+                      isAnswered
+                      isCorrect={false}
+                    />
+                  ) : (
+                    <QuestionParts parts={currentQuestion?.parts || []} />
+                  )}
                 </div>
 
                 {isOptionType && Array.isArray(currentQuestion?.options) && currentQuestion.options.length > 0 ? (

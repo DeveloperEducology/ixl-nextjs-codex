@@ -3,6 +3,7 @@
 import styles from './QuestionParts.module.css';
 import { getImageSrc, hasInlineHtml, isImageUrl, isInlineSvg, sanitizeInlineHtml } from './contentUtils';
 import SpeakerButton from './SpeakerButton';
+import SafeImage from './SafeImage';
 
 /**
  * @typedef {Object} QuestionPart
@@ -61,16 +62,18 @@ export default function QuestionParts({ parts }) {
         return (
             <div key={index} className={styles.imageContainer}>
                 {Array.from({ length: repeatCount }).map((_, imageIndex) => (
-                    <img
+                    <SafeImage
                         key={`img-${index}-${imageIndex}`}
                         src={imageSrc}
                         alt={`Question image ${imageIndex + 1}`}
                         className={styles.image}
+                        width={320}
+                        height={150}
                         style={{
                             maxWidth: part.width ? `${part.width}px` : undefined,
                             maxHeight: part.height ? `${part.height}px` : undefined,
                         }}
-                        loading="lazy"
+                        sizes="(max-width: 768px) 70vw, 320px"
                     />
                 ))}
             </div>
@@ -94,11 +97,13 @@ export default function QuestionParts({ parts }) {
                 if (isImageUrl(part.content)) {
                     return (
                         <div key={index} className={styles.imageContainer}>
-                            <img
+                            <SafeImage
                                 src={part.content}
                                 alt="Question visual"
                                 className={styles.urlImage}
-                                loading="lazy"
+                                width={320}
+                                height={150}
+                                sizes="(max-width: 768px) 70vw, 320px"
                             />
                         </div>
                     );

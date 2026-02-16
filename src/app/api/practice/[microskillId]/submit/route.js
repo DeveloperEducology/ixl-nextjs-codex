@@ -9,6 +9,7 @@ const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 function toPublicQuestion(question) {
   if (!question) return null;
+  const fourPics = getFourPicsPuzzle(question);
 
   return {
     id: question.id,
@@ -20,6 +21,9 @@ function toPublicQuestion(question) {
     dragItems: question.dragItems ?? [],
     dropGroups: question.dropGroups ?? [],
     adaptiveConfig: question.adaptiveConfig ?? null,
+    measureTarget: getMeasureTarget(question),
+    wordLength: fourPics.wordLength,
+    letterBank: fourPics.letterBank,
     isMultiSelect: Boolean(question.isMultiSelect),
     isVertical: Boolean(question.isVertical),
     showSubmitButton: Boolean(question.showSubmitButton),
@@ -43,6 +47,41 @@ function parseNumber(value) {
   if (!match) return null;
   const parsed = Number(match[0]);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getMeasureTarget(question) {
+  if (!question || question.type !== 'measure') return null;
+
+  return (
+    parseNumber(question.adaptiveConfig?.target_units) ??
+    parseNumber(question.adaptiveConfig?.line_units) ??
+    parseNumber(question.adaptiveConfig?.line_length) ??
+    parseNumber(question.adaptiveConfig?.target_length) ??
+    parseNumber(question.correctAnswerText)
+  );
+}
+
+function shuffleLetters(letters) {
+  const out = [...letters];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function getFourPicsPuzzle(question) {
+  if (!question || question.type !== 'fourPicsOneWord') return { wordLength: null, letterBank: null };
+
+  const answer = String(question.correctAnswerText ?? '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+
+  if (!answer) return { wordLength: null, letterBank: null };
+  return {
+    wordLength: answer.length,
+    letterBank: shuffleLetters(answer.split('')),
+  };
 }
 
 function normalizeDifficulty(value) {
@@ -157,9 +196,22 @@ function buildFeedback(question) {
 
     case 'fillInTheBlank': {
       const parsed = parseMaybeJson(question.correctAnswerText, {});
-      feedback.correctAnswerDisplay = parsed && typeof parsed === 'object'
-        ? Object.entries(parsed).map(([k, v]) => `${k}: ${v}`).join(', ')
-        : String(question.correctAnswerText ?? '');
+      if (parsed && typeof parsed === 'object') {
+        const arithmeticPart = (question.parts || []).find((part) => part?.type === 'arithmeticLayout');
+        const rows = Array.isArray(arithmeticPart?.layout?.rows) ? arithmeticPart.layout.rows : [];
+        const answerRow = rows.find((row) => String(row?.kind || '').toLowerCase() === 'answer');
+        const cells = Array.isArray(answerRow?.cells) ? answerRow.cells : [];
+
+        if (cells.length > 0) {
+          const prefix = String(answerRow?.prefix || '');
+          const joined = cells.map((cell, idx) => String(parsed[cell?.id ?? `cell_${idx}`] ?? '')).join('');
+          feedback.correctAnswerDisplay = `${prefix}${joined}`.trim();
+        } else {
+          feedback.correctAnswerDisplay = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`).join(', ');
+        }
+      } else {
+        feedback.correctAnswerDisplay = String(question.correctAnswerText ?? '');
+      }
       return feedback;
     }
 

@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import styles from './SortingRenderer.module.css';
 import QuestionParts from './QuestionParts';
 import { isImageUrl, isInlineSvg } from './contentUtils';
+import SafeImage from './SafeImage';
 
 function SortableItem({ itemId, index, isAnswered, isSelected, onTap, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -105,11 +106,13 @@ export default function SortingRenderer({
 
     if (isImageUrl(content)) {
       return (
-        <img
+        <SafeImage
           src={content}
           alt={`Sorted item ${itemId}`}
           className={styles.itemImage}
-          loading="lazy"
+          width={120}
+          height={84}
+          sizes="(max-width: 768px) 26vw, 120px"
         />
       );
     }
